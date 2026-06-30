@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,15 +21,20 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.6'
+      - name: Install Gradle 8.6
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.6-bin.zip -O /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp/
+          sudo ln -sf /tmp/gradle-8.6/bin/gradle /usr/local/bin/gradle
+          gradle --version
+
+      - name: Set Android SDK path
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Build Debug APK
         run: gradle assembleDebug
 
-      - name: Publish Release
+      - name: Create Release
         run: |
           gh release delete latest --yes 2>/dev/null || true
           gh release create latest \
