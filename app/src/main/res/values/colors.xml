@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_dark">#0F0F1A</color>
+    <color name="card_bg">#1E1E35</color>
+    <color name="yellow">#F5C518</color>
+    <color name="text_primary">#E0E0F8</color>
+    <color name="text_muted">#6666AA</color>
+    <color name="label_color">#555577</color>
+    <color name="detail_row_bg">#1A1A30</color>
+    <color name="green">#4CDE80</color>
+    <color name="red">#FF5C5C</color>
+</resources>

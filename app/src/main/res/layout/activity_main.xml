@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingTop="12dp"
+                android:paddingBottom="20dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="⚡ DTEK"
+                    android:textColor="@color/yellow"
+                    android:textSize="22sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Українка · СТ Мрія · 25"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp"/>
+            </LinearLayout>
+
+            <!-- Loading -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="60dp"
+                android:layout_marginBottom="60dp"
+                android:indeterminateTint="@color/yellow"
+                android:visibility="visible"/>
+
+            <!-- Status Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:id="@+id/tvStatusIcon"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:textSize="48sp"
+                        android:paddingBottom="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tvStatusTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:paddingBottom="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tvStatusSubtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:textColor="@color/text_muted"
+                        android:textSize="14sp"
+                        android:paddingBottom="16dp"/>
+
+                    <!-- Reason -->
+                    <LinearLayout
+                        android:id="@+id/rowReason"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/detail_row_bg"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:visibility="gone">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="ПРИЧИНА" android:textColor="@color/label_color"
+                            android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.05"/>
+                        <TextView android:id="@+id/tvReason" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:textColor="#FF9966"
+                            android:textSize="15sp" android:textStyle="bold" android:paddingTop="2dp"/>
+                    </LinearLayout>
+
+                    <!-- Start time -->
+                    <LinearLayout
+                        android:id="@+id/rowStart"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/detail_row_bg"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:visibility="gone">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="ПОЧАТОК ВІДКЛЮЧЕННЯ" android:textColor="@color/label_color"
+                            android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.05"/>
+                        <TextView android:id="@+id/tvStart" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:textColor="@color/text_primary"
+                            android:textSize="15sp" android:textStyle="bold" android:paddingTop="2dp"/>
+                    </LinearLayout>
+
+                    <!-- Estimated end -->
+                    <LinearLayout
+                        android:id="@+id/rowEnd"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/detail_row_bg"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:visibility="gone">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="ОЧІКУВАНЕ ВІДНОВЛЕННЯ" android:textColor="@color/label_color"
+                            android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.05"/>
+                        <TextView android:id="@+id/tvEnd" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:textColor="@color/yellow"
+                            android:textSize="15sp" android:textStyle="bold" android:paddingTop="2dp"/>
+                    </LinearLayout>
+
+                    <!-- Site updated -->
+                    <LinearLayout
+                        android:id="@+id/rowSiteUpdated"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/detail_row_bg"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:visibility="gone">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="ОНОВЛЕНО НА САЙТІ" android:textColor="@color/label_color"
+                            android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.05"/>
+                        <TextView android:id="@+id/tvSiteUpdated" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:textColor="@color/text_primary"
+                            android:textSize="15sp" android:textStyle="bold" android:paddingTop="2dp"/>
+                    </LinearLayout>
+
+                    <!-- Queue badge -->
+                    <TextView
+                        android:id="@+id/tvQueue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/queue_badge_bg"
+                        android:textColor="@color/bg_dark"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:layout_marginTop="12dp"
+                        android:visibility="gone"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Error Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#2A1A1A"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️"
+                        android:textSize="36sp"
+                        android:paddingBottom="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tvError"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#FF8888"
+                        android:textSize="14sp"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Last updated -->
+            <TextView
+                android:id="@+id/tvLastUpdated"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:paddingBottom="8dp"
+                android:visibility="gone"/>
+
+            <!-- Open DTEK button -->
+            <Button
+                android:id="@+id/btnOpenDtek"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="4dp"
+                android:backgroundTint="#1E1E35"
+                android:text="Відкрити сайт DTEK ↗"
+                android:textColor="@color/text_muted"
+                android:textSize="14sp"
+                app:strokeColor="#333355"
+                app:strokeWidth="1dp"
+                style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Потягніть вниз для оновлення"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="8dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
