@@ -27,15 +27,14 @@ jobs:
 
       - name: Build Debug APK
         run: gradle assembleDebug
-        working-directory: android_app
 
-      - name: Publish to GitHub Releases (public download)
+      - name: Publish Release
         run: |
           gh release delete latest --yes 2>/dev/null || true
           gh release create latest \
-            android_app/app/build/outputs/apk/debug/app-debug.apk \
+            app/build/outputs/apk/debug/app-debug.apk \
             --title "DTEK Checker" \
-            --notes "Автоматична збірка — завантажте app-debug.apk" \
+            --notes "Завантажте app-debug.apk" \
             --latest
         env:
           GH_TOKEN: ${{ github.token }}
