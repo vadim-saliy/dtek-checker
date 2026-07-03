@@ -1,33 +1,122 @@
 package com.dtek.checker
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
-import android.view.View
+import android.view.Gravity
 import android.webkit.*
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import com.dtek.checker.databinding.ActivityMainBinding
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var swipe: SwipeRefreshLayout
+    private lateinit var tvIcon: TextView
+    private lateinit var tvTitle: TextView
+    private lateinit var tvDetails: TextView
+    private lateinit var tvTime: TextView
+    private lateinit var btnRefresh: Button
     private lateinit var webView: WebView
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
+        window.statusBarColor     = Color.parseColor("#0F0F1A")
+        window.navigationBarColor = Color.parseColor("#0F0F1A")
+        buildUI()
         setupWebView()
-        setupSwipeRefresh()
-        binding.btnOpenDtek.setOnClickListener { openDtekInWebView() }
         loadData()
     }
+
+    // ── UI ────────────────────────────────────────────────────────────────────
+
+    private fun buildUI() {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor("#0F0F1A"))
+        }
+
+        swipe = SwipeRefreshLayout(this).apply {
+            setColorSchemeColors(Color.parseColor("#F5C518"))
+            setProgressBackgroundColorSchemeColor(Color.parseColor("#1A1A2E"))
+        }
+
+        val scroll = ScrollView(this)
+        val inner  = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(24), dp(20), dp(40))
+        }
+        scroll.addView(inner, mpWrap())
+        swipe.addView(scroll)
+        root.addView(swipe, mpMp())
+        swipe.setOnRefreshListener { loadData() }
+
+        // Header
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity     = Gravity.CENTER_VERTICAL
+        }
+        header.addView(tv("⚡ DTEK", 22f, "#F5C518", bold = true), wrapW(weight = 1f))
+        header.addView(tv("Українка · СТ Мрія · 25", 12f, "#6666AA"))
+        inner.addView(header, mbLp(dp(28)))
+
+        // Icon
+        tvIcon = tv("⏳", 52f, "#FFFFFF").also { it.gravity = Gravity.CENTER }
+        inner.addView(tvIcon, mbLp(dp(8)))
+
+        // Title
+        tvTitle = tv("Завантаження...", 22f, "#F5C518", bold = true).also {
+            it.gravity = Gravity.CENTER
+        }
+        inner.addView(tvTitle, mbLp(dp(16)))
+
+        // Details card
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor("#1A1A2E"))
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+        }
+        tvDetails = tv("", 14f, "#AAAACC").also { it.lineSpacingMultiplier = 1.6f }
+        card.addView(tvDetails)
+        inner.addView(card, mbLp(dp(16)))
+
+        // Time
+        tvTime = tv("", 12f, "#555577").also { it.gravity = Gravity.CENTER }
+        inner.addView(tvTime, mbLp(dp(20)))
+
+        // Refresh button
+        btnRefresh = Button(this).apply {
+            text = "🔄 Оновити"
+            textSize = 16f
+            setTextColor(Color.parseColor("#0F0F1A"))
+            setBackgroundColor(Color.parseColor("#F5C518"))
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setOnClickListener { loadData() }
+        }
+        inner.addView(btnRefresh, mbLp(dp(8)))
+
+        // Open site
+        inner.addView(Button(this).apply {
+            text = "Відкрити сайт DTEK ↗"
+            textSize = 13f
+            setTextColor(Color.parseColor("#8888CC"))
+            setBackgroundColor(Color.TRANSPARENT)
+            setOnClickListener {
+                startActivity(Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://www.dtek-krem.com.ua/ua/shutdowns")))
+            }
+        }, mbLp(0))
+
+        setContentView(root)
+    }
+
+    // ── WebView ───────────────────────────────────────────────────────────────
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
@@ -35,277 +124,201 @@ class MainActivity : AppCompatActivity() {
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
-                userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-N970U) " +
-                        "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                        "Chrome/120.0.0.0 Mobile Safari/537.36"
-                cacheMode = WebSettings.LOAD_NO_CACHE
+                cacheMode         = WebSettings.LOAD_NO_CACHE
+                userAgentString   =
+                    "Mozilla/5.0 (Linux; Android 13; SM-N770F) " +
+                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                    "Chrome/120.0.0.0 Mobile Safari/537.36"
             }
-            addJavascriptInterface(DtekBridge(), "Android")
+            addJavascriptInterface(Bridge(), "Android")
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    view?.evaluateJavascript(injectionScript(), null)
+                    view?.evaluateJavascript(JS_SCRIPT, null)
                 }
-                override fun onReceivedError(view: WebView?, request: WebResourceRequest?,
-                                             error: WebResourceError?) {
-                    if (request?.isForMainFrame == true) {
-                        runOnUiThread { showError("Немає інтернет-з'єднання") }
-                    }
+                override fun onReceivedError(
+                    view: WebView?, req: WebResourceRequest?, err: WebResourceError?
+                ) {
+                    if (req?.isForMainFrame == true)
+                        runOnUiThread { showError("Немає з'єднання з інтернетом") }
                 }
             }
-        }
-    }
-
-    private fun setupSwipeRefresh() {
-        binding.swipeRefresh.apply {
-            setColorSchemeColors(Color.parseColor("#F5C518"))
-            setBackgroundColor(Color.parseColor("#0F0F1A"))
-            setOnRefreshListener { loadData() }
         }
     }
 
     private fun loadData() {
-        showLoading()
+        swipe.isRefreshing   = false
+        btnRefresh.isEnabled = false
+        tvIcon.text          = "⏳"
+        tvTitle.text         = "Перевіряємо..."
+        tvTitle.setTextColor(Color.parseColor("#F5C518"))
+        tvDetails.text       = "Завантажуємо дані з сайту DTEK…"
+        tvTime.text          = ""
         webView.loadUrl("https://www.dtek-krem.com.ua/ua/shutdowns")
     }
 
-    private fun openDtekInWebView() {
-        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
-            android.net.Uri.parse("https://www.dtek-krem.com.ua/ua/shutdowns"))
-        startActivity(intent)
-    }
+    // ── JS Bridge ─────────────────────────────────────────────────────────────
 
-    private fun showLoading() {
-        binding.apply {
-            progressBar.visibility = View.VISIBLE
-            cardStatus.visibility = View.GONE
-            cardError.visibility = View.GONE
-            tvLastUpdated.visibility = View.GONE
-            swipeRefresh.isRefreshing = false
+    inner class Bridge {
+        @JavascriptInterface
+        fun onResult(json: String) = runOnUiThread {
+            btnRefresh.isEnabled = true
+            try {
+                val d         = JSONObject(json)
+                val hasOutage = d.optBoolean("has_outage", false)
+                val reason    = d.optString("reason").ifEmpty { null }
+                val start     = d.optString("start_time").ifEmpty { null }
+                val end       = d.optString("estimated_end").ifEmpty { null }
+                val updated   = d.optString("updated_at").ifEmpty { null }
+                val queue     = d.optString("queue").ifEmpty { null }
+                val raw       = d.optString("raw_text").ifEmpty { null }
+
+                if (hasOutage) {
+                    tvIcon.text = "🔴"
+                    tvTitle.text = "СВІТЛА НЕМАЄ"
+                    tvTitle.setTextColor(Color.parseColor("#FF5C5C"))
+                    val sb = StringBuilder()
+                    reason?.let  { sb.appendLine("⚠️ Причина: $it") }
+                    start?.let   { sb.appendLine("🕐 Початок: $it") }
+                    end?.let     { sb.appendLine("🕓 Очікуване відновлення: $it") }
+                    queue?.let   { sb.appendLine("📋 $it") }
+                    updated?.let { sb.appendLine("\nОновлено на сайті: $it") }
+                    if (sb.isEmpty()) raw?.take(300)?.let { sb.append(it) }
+                    tvDetails.text = sb.toString().trim()
+                } else {
+                    tvIcon.text = "🟢"
+                    tvTitle.text = "СВІТЛО Є"
+                    tvTitle.setTextColor(Color.parseColor("#4CDE80"))
+                    tvDetails.text = "Аварійних відключень за вашою адресою не зафіксовано."
+                }
+                tvTime.text = "Перевірено: " +
+                    SimpleDateFormat("HH:mm  dd.MM.yyyy", Locale.getDefault()).format(Date())
+            } catch (e: Exception) { showError("Помилка: ${e.message}") }
+        }
+
+        @JavascriptInterface
+        fun onError(msg: String) = runOnUiThread {
+            btnRefresh.isEnabled = true
+            showError(msg)
         }
     }
 
     private fun showError(msg: String) {
-        binding.apply {
-            progressBar.visibility = View.GONE
-            cardStatus.visibility = View.GONE
-            cardError.visibility = View.VISIBLE
-            tvError.text = msg
-            swipeRefresh.isRefreshing = false
-        }
+        tvIcon.text = "⚠️"
+        tvTitle.text = "Помилка"
+        tvTitle.setTextColor(Color.parseColor("#FF8888"))
+        tvDetails.text = msg
+        btnRefresh.isEnabled = true
     }
 
-    private fun displayResult(data: JSONObject) {
-        val hasOutage = data.optBoolean("has_outage", false)
-        val reason = data.optString("reason", "").ifEmpty { null }
-        val startTime = data.optString("start_time", "").ifEmpty { null }
-        val estimatedEnd = data.optString("estimated_end", "").ifEmpty { null }
-        val updatedAt = data.optString("updated_at", "").ifEmpty { null }
-        val queue = data.optString("queue", "").ifEmpty { null }
-        val rawText = data.optString("raw_text", "").ifEmpty { null }
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-        binding.apply {
-            progressBar.visibility = View.GONE
-            cardStatus.visibility = View.VISIBLE
-            cardError.visibility = View.GONE
-            swipeRefresh.isRefreshing = false
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    private fun mpMp() = LinearLayout.LayoutParams(-1, -1)
+    private fun mpWrap() = LinearLayout.LayoutParams(-1, -2)
+    private fun wrapW(weight: Float = 0f) =
+        LinearLayout.LayoutParams(-2, -2, weight)
+    private fun mbLp(mb: Int = 0) =
+        LinearLayout.LayoutParams(-1, -2).also { it.bottomMargin = mb }
 
-            if (hasOutage) {
-                tvStatusIcon.text = "🔴"
-                tvStatusTitle.text = "Світла немає"
-                tvStatusTitle.setTextColor(Color.parseColor("#FF5C5C"))
-                tvStatusSubtitle.text = reason ?: "Аварійне відключення"
-                cardStatus.setCardBackgroundColor(Color.parseColor("#2A1A1A"))
-            } else {
-                tvStatusIcon.text = "🟢"
-                tvStatusTitle.text = "Світло є"
-                tvStatusTitle.setTextColor(Color.parseColor("#4CDE80"))
-                tvStatusSubtitle.text = "Електропостачання в нормі"
-                cardStatus.setCardBackgroundColor(Color.parseColor("#1A2A1A"))
-            }
-
-            // Detail rows
-            rowReason.visibility = if (reason != null) View.VISIBLE else View.GONE
-            tvReason.text = reason
-
-            rowStart.visibility = if (startTime != null) View.VISIBLE else View.GONE
-            tvStart.text = startTime
-
-            rowEnd.visibility = if (estimatedEnd != null) View.VISIBLE else View.GONE
-            tvEnd.text = estimatedEnd
-            if (estimatedEnd != null) {
-                tvEnd.setTextColor(Color.parseColor("#F5C518"))
-            }
-
-            rowSiteUpdated.visibility = if (updatedAt != null) View.VISIBLE else View.GONE
-            tvSiteUpdated.text = updatedAt
-
-            tvQueue.visibility = if (queue != null) View.VISIBLE else View.GONE
-            tvQueue.text = queue
-
-            // Fallback raw text
-            if (!hasOutage && reason == null && rawText != null) {
-                rowReason.visibility = View.VISIBLE
-                tvReason.text = rawText
-            }
-
-            val now = SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault()).format(Date())
-            tvLastUpdated.text = "Оновлено: $now"
-            tvLastUpdated.visibility = View.VISIBLE
-        }
+    private fun tv(
+        text: String, size: Float, color: String, bold: Boolean = false
+    ) = TextView(this).apply {
+        this.text  = text
+        textSize   = size
+        setTextColor(Color.parseColor(color))
+        if (bold) typeface = android.graphics.Typeface.DEFAULT_BOLD
     }
 
-    inner class DtekBridge {
-        @JavascriptInterface
-        fun onResult(json: String) {
-            runOnUiThread {
-                try {
-                    displayResult(JSONObject(json))
-                } catch (e: Exception) {
-                    showError("Помилка обробки даних: ${e.message}")
-                }
-            }
-        }
+    // ── JS ────────────────────────────────────────────────────────────────────
 
-        @JavascriptInterface
-        fun onError(msg: String) {
-            runOnUiThread { showError(msg) }
-        }
-
-        @JavascriptInterface
-        fun onLog(msg: String) {
-            // debug log from JS
-        }
-    }
-
-    private fun injectionScript() = """
+    companion object {
+        private val JS_SCRIPT = """
 (function() {
-    function log(m) { try { Android.onLog(m); } catch(e){} }
+  var CITY   = 'м. Українка';
+  var STREET = 'СТ Мрія';
+  var HOUSE  = '25';
 
-    function clickOption(value, cb) {
-        var opts = document.querySelectorAll('[class*="option"]');
-        for (var i = 0; i < opts.length; i++) {
-            var t = opts[i].textContent.trim();
-            if (t === value || t.includes(value)) {
-                opts[i].dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));
-                opts[i].click();
-                log('Selected: ' + value);
-                if (cb) setTimeout(cb, 900);
-                return true;
-            }
-        }
-        log('Not found: ' + value);
-        return false;
+  function selectOption(value, done) {
+    var opts = document.querySelectorAll('[class*="option"]');
+    for (var i = 0; i < opts.length; i++) {
+      var t = opts[i].textContent.trim();
+      if (t === value || t.indexOf(value) === 0) {
+        opts[i].dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));
+        opts[i].click();
+        if (done) setTimeout(done, 1000);
+        return true;
+      }
     }
+    return false;
+  }
 
-    function openDropdown(idx, cb) {
-        var controls = document.querySelectorAll('[class*="select__control"],[class*="Select__control"]');
-        log('Dropdowns found: ' + controls.length);
-        if (controls[idx]) {
-            controls[idx].dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));
-            controls[idx].click();
-            setTimeout(cb, 700);
-        } else {
-            Android.onError('Не знайдено dropdown #' + idx + ' (всього: ' + controls.length + ')');
-        }
+  function openDropdown(idx, done) {
+    var ctrls = document.querySelectorAll('[class*="control"]');
+    if (ctrls[idx]) {
+      ctrls[idx].dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));
+      ctrls[idx].click();
+      setTimeout(done, 800);
     }
+  }
 
-    function extractResult() {
-        var result = {
-            has_outage: false,
-            reason: null,
-            start_time: null,
-            estimated_end: null,
-            updated_at: null,
-            queue: null,
-            raw_text: null
-        };
+  function extract() {
+    var body = document.body ? (document.body.innerText || '') : '';
+    var result = { has_outage: false, reason: null, start_time: null,
+                   estimated_end: null, updated_at: null, queue: null, raw_text: null };
 
-        var body = document.body ? document.body.innerText : '';
-        result.has_outage = body.toLowerCase().includes('відсутня електроенергія');
+    result.has_outage = body.toLowerCase().indexOf('відсутня електроенергія') >= 0;
 
-        // Try to find the status block
-        var candidates = document.querySelectorAll(
-            '[class*="alert"],[class*="notice"],[class*="shutdown"],[class*="status-block"],[class*="info-box"],[class*="infoBlock"]'
-        );
-        var statusEl = null;
-        for (var i = 0; i < candidates.length; i++) {
-            var t = candidates[i].innerText || '';
-            if (t.length > 30 && (t.includes('електроенергія') || t.includes('відключення') || t.includes('Причина'))) {
-                statusEl = candidates[i];
-                break;
-            }
+    var elems = document.querySelectorAll('div, p, section');
+    for (var i = 0; i < elems.length; i++) {
+      var t = elems[i].innerText || '';
+      if (t.indexOf('Причина') >= 0 || t.toLowerCase().indexOf('відсутня') >= 0) {
+        result.raw_text = t.substring(0, 500);
+        var lines = t.split('\n');
+        for (var j = 0; j < lines.length; j++) {
+          var l = lines[j].trim(); var ll = l.toLowerCase();
+          if (ll.indexOf('причина') >= 0)
+            result.reason = l.split(':').slice(1).join(':').trim();
+          else if (ll.indexOf('початок') >= 0 || ll.indexOf('початку') >= 0)
+            result.start_time = l.split('–').slice(1).join('–').trim();
+          else if (ll.indexOf('відновлення') >= 0)
+            result.estimated_end = l.split('–').slice(1).join('–').trim();
+          else if (ll.indexOf('оновлення') >= 0)
+            result.updated_at = l.split('–').slice(1).join('–').trim();
         }
-
-        if (!statusEl) {
-            // scan all divs for the yellow box
-            var divs = document.querySelectorAll('div, p, section');
-            for (var j = 0; j < divs.length; j++) {
-                var dt = divs[j].innerText || '';
-                if (dt.includes('Причина') && dt.includes('електроенергія')) {
-                    statusEl = divs[j];
-                    break;
-                }
-            }
-        }
-
-        if (statusEl) {
-            var text = statusEl.innerText;
-            result.raw_text = text.trim().substring(0, 500);
-            var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(function(l){ return l.length > 0; });
-            lines.forEach(function(line) {
-                var ll = line.toLowerCase();
-                if (ll.includes('причина')) result.reason = line.split(':').slice(1).join(':').trim();
-                else if (ll.includes('час початку') || ll.includes('початок')) result.start_time = line.split('–').slice(1).join('–').trim();
-                else if (ll.includes('відновлення')) result.estimated_end = line.split('–').slice(1).join('–').trim();
-                else if (ll.includes('оновлення')) result.updated_at = line.split('–').slice(1).join('–').trim();
-            });
-        }
-
-        var qm = body.match(/Черга\s+[\d.]+/);
-        if (qm) result.queue = qm[0];
-
-        log('Result: ' + JSON.stringify(result));
-        Android.onResult(JSON.stringify(result));
+        break;
+      }
     }
+    var qm = body.match(/Черга\s+[\d.]+/);
+    if (qm) result.queue = qm[0];
+    Android.onResult(JSON.stringify(result));
+  }
 
-    log('Script injected, starting selection...');
-    setTimeout(function() {
-        // Step 1: city
-        openDropdown(0, function() {
-            setTimeout(function() {
-                if (!clickOption('м. Українка', function() {
-                    setTimeout(function() {
-                        // Step 2: street
-                        openDropdown(1, function() {
-                            setTimeout(function() {
-                                if (!clickOption('СТ Мрія', function() {
-                                    setTimeout(function() {
-                                        // Step 3: house
-                                        openDropdown(2, function() {
-                                            setTimeout(function() {
-                                                if (!clickOption('25', function() {
-                                                    setTimeout(extractResult, 2500);
-                                                })) {
-                                                    // try numeric
-                                                    if (!clickOption('25', null)) {
-                                                        setTimeout(extractResult, 1000);
-                                                    }
-                                                }
-                                            }, 400);
-                                        });
-                                    }, 400);
-                                })) {
-                                    Android.onError('Вулицю СТ Мрія не знайдено у списку');
-                                }
-                            }, 400);
+  setTimeout(function() {
+    openDropdown(0, function() {
+      setTimeout(function() {
+        selectOption(CITY, function() {
+          setTimeout(function() {
+            openDropdown(1, function() {
+              setTimeout(function() {
+                selectOption(STREET, function() {
+                  setTimeout(function() {
+                    openDropdown(2, function() {
+                      setTimeout(function() {
+                        selectOption(HOUSE, function() {
+                          setTimeout(extract, 2500);
                         });
-                    }, 400);
-                })) {
-                    Android.onError('Місто Українка не знайдено у списку');
-                }
-            }, 400);
+                      }, 500);
+                    });
+                  }, 500);
+                });
+              }, 500);
+            });
+          }, 500);
         });
-    }, 2000);
+      }, 500);
+    });
+  }, 2000);
 })();
 """.trimIndent()
+    }
 }
