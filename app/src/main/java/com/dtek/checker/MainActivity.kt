@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(Color.parseColor("#1A1A2E"))
             setPadding(dp(16), dp(16), dp(16), dp(16))
         }
-        tvDetails = tv("", 14f, "#AAAACC").also { it.lineSpacingMultiplier = 1.6f }
+        tvDetails = tv("", 14f, "#AAAACC").also { it.setLineSpacing(0f, 1.6f) }
         card.addView(tvDetails)
         inner.addView(card, mbLp(dp(16)))
 
